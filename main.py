@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List
 import numpy as np
 import coleta
-# from tensorflow.keras.models import load_model
+from datetime import datetime
 import joblib
 
 app = FastAPI(
@@ -12,10 +12,17 @@ app = FastAPI(
     version="1.0"
 )
 
-@app.get("/coletar_dados")
-def coletar():
-    return coleta.get_dados()
+@app.get("/sector")
+def coletar_setor():
+    return coleta.get_setor()
 
+@app.get("/symbol")
+def coletar_symbol(sector: str):
+    return coleta.get_symbols(sector)
+
+@app.get("/coletar_dados")
+def coletar(data_inicial: str, data_final: str, symbol: str):
+    return coleta.get_dados(symbol, data_inicial, data_final)
 # # Carregando o modelo e o scaler
 # model = load_model("app/model/modelo_lstm.h5")
 # scaler = joblib.load("app/utils/scaler.pkl")
