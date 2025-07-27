@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Body
 import yfinance as yf
 import numpy as np
+import coleta
 from tensorflow.keras.models import load_model, clone_model
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.preprocessing import MinMaxScaler
@@ -34,6 +35,18 @@ def fine_tune_model(general_model, X, y):
               callbacks=[EarlyStopping(patience=2, restore_best_weights=True)],
               verbose=0)
     return model
+
+@app.get("/sector")
+def coletar_setor():
+    return coleta.get_setor()
+
+@app.get("/symbol")
+def coletar_symbol(sector: str):
+    return coleta.get_symbols(sector)
+
+@app.get("/coletar_dados")
+def coletar(data_inicial: str, data_final: str, symbol: str):
+    return coleta.get_dados(symbol, data_inicial, data_final)
 
 @app.post("/predict")
 def predict(stock_code: str = Body(..., media_type="application/json")):
