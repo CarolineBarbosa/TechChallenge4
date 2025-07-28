@@ -1,12 +1,12 @@
 from fastapi import FastAPI, HTTPException, Body
 import yfinance as yf
 import numpy as np
-import coleta
+import app.coleta as coleta
 from tensorflow.keras.models import load_model, clone_model
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.losses import MeanSquaredError
-
+import joblib
 import os
 
 app = FastAPI()
@@ -49,7 +49,7 @@ def coletar(data_inicial: str, data_final: str, symbol: str):
     return coleta.get_dados(symbol, data_inicial, data_final)
 
 @app.post("/predict")
-def predict(stock_code: str = Body(..., media_type="application/json")):
+def predict(stock_code: str):
     symbol = stock_code.upper()
 
     try:
@@ -59,7 +59,7 @@ def predict(stock_code: str = Body(..., media_type="application/json")):
     except Exception:
         raise HTTPException(status_code=404, detail="Could not fetch stock data.")
 
-    scaler = MinMaxScaler()
+    scaler = joblib.load(f'app/models/scaler.joblib')
     scaled = scaler.fit_transform(df.values)
     X, y = create_sequences(scaled, time_steps=TIME_STEPS)
 
@@ -68,7 +68,7 @@ def predict(stock_code: str = Body(..., media_type="application/json")):
 
     X = X.reshape((X.shape[0], X.shape[1], 1))
 
-    model_path = os.path.join(os.path.dirname(__file__), "models", "VALE_lstm.h5")
+    model_path = os.path.join(os.path.dirname(__file__), "models", "general_lstm.h5")
     if not os.path.exists(model_path):
         raise HTTPException(status_code=500, detail="Pretrained model not found.")
     general_model = load_model(model_path,custom_objects={"mse": MeanSquaredError()})
@@ -77,12 +77,8 @@ def predict(stock_code: str = Body(..., media_type="application/json")):
 
     input_seq = scaled[-TIME_STEPS:].reshape(1, TIME_STEPS, 1)
     predictions = []
-    for _ in range(PRED_DAYS):
-        next_price = model.predict(input_seq, verbose=0)
-        predictions.append(next_price[0, 0])
-        next_price_reshaped = next_price.reshape((1, 1, 1))
-        input_seq = np.concatenate((input_seq[:, 1:, :], next_price_reshaped), axis=1)
-
-    predictions = scaler.inverse_transform(np.array(predictions).reshape(-1, 1)).flatten().tolist()
+    next_price = model.predict(input_seq, verbose=0)
+     
+    predictions = scaler.inverse_transform(np.array(next_price).reshape(-1, 1)).flatten().tolist()
 
     return {"symbol": symbol, "predicted_prices": predictions}

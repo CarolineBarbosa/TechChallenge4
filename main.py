@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
 import numpy as np
-import coleta
+import app.coleta as coleta
 from datetime import datetime
 import joblib
 
