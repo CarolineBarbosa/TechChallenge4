@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Body
 import yfinance as yf
 import numpy as np
-import app.coleta as coleta
+import coleta as coleta
 from tensorflow.keras.models import load_model, clone_model
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.preprocessing import MinMaxScaler
@@ -59,7 +59,7 @@ def predict(stock_code: str):
     except Exception:
         raise HTTPException(status_code=404, detail="Could not fetch stock data.")
 
-    scaler = joblib.load(f'app/models/scaler.joblib')
+    scaler = joblib.load(f'models/scaler.joblib')
     scaled = scaler.fit_transform(df.values)
     X, y = create_sequences(scaled, time_steps=TIME_STEPS)
 
